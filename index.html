@@ -143,6 +143,10 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
 .bd div.on{color:var(--tx);border-color:var(--ac);box-shadow:0 0 18px var(--acg) inset}
 .bd div.on i{filter:none;opacity:1}
 .ico{width:74px;height:74px;border-radius:18px;background:url(icon.png) center/cover;flex:none;box-shadow:0 8px 22px #000a;border:1px solid #ffffff22}
+.gas .tp{display:flex;gap:8px;margin-bottom:10px}.gas .tp button{flex:1;border-radius:99px;padding:9px;border:1.5px solid #ffffff40;background:transparent;color:var(--tx);font-weight:700;font-family:inherit;font-size:13px}.gas .tp button.on{background:var(--ac);color:#140700;border-color:transparent}
+.gas .rd{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.gas .rd span{padding:5px 11px;border-radius:99px;border:1px solid #ffffff30;font-size:12px;font-weight:700}.gas .rd span.on{background:#ffffff1f;border-color:#ffffff55}
+.gas .gr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #ffffff12}.gas .gr b{font-size:14px;display:block}.gas .gr small{font-size:12px;color:var(--mu)}.gas .gr .pr{font-size:20px;font-weight:800;white-space:nowrap}.gas .gr.f .pr{color:var(--ac)}
+.gas .gm{font-size:11px;color:var(--mu);margin-top:8px;line-height:1.4}.gas .gl{background:none;border:0;color:var(--ac);font-weight:700;font-size:12px;padding:0;font-family:inherit}
 .note{font-size:12px;color:var(--mu);margin-top:8px;line-height:1.45}
 </style></head><body>
 <div id="app">
@@ -166,6 +170,8 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
     <div class="card" id="last"></div>
     <h3>Próximo aviso</h3>
     <div class="card" id="av1"></div>
+    <h3>Gasolineras cerca</h3>
+    <div class="card gas" id="gas"></div>
     <h3>Luz ambiente</h3>
     <div class="card"><div class="dots" id="dots"></div></div>
     <div id="inst"></div>
@@ -302,11 +308,34 @@ var MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"
 var TY=[["🛠️","Revisión"],["🛑","Frenos"],["🔧","Avería"],["🛞","Neumáticos"],["📋","ITV"],["➕","Otro"]];
 var COLORS=["#ff6a2b","#2ec4ff","#b266ff","#2bff9c","#ff2b4a"];
 var KEY="a180_v1";
-var S={fills:[],pend:[],exp:[],avs:[],cfg:{color:0,tank:43,reg:"",itv:""}};
+var S={fills:[],pend:[],exp:[],avs:[],cfg:{color:0,tank:43,reg:"",itv:"",gf:"d",gr:10}};
 var cur=0,fm={idx:-1,pid:null},em={idx:-1,ty:0,blob:null,had:false,del:false},am=-1,tmp={a:null,b:null},yi=0,pdfFile=null;
 
 /* ---------- datos ---------- */
 function load(){try{var r=JSON.parse(localStorage.getItem(KEY));if(r){S.fills=r.fills||[];S.pend=r.pend||[];S.exp=r.exp||[];S.avs=r.avs||[];for(var k in r.cfg)S.cfg[k]=r.cfg[k]}}catch(e){}}
+
+var GK="a180_gas",GC=null,GP=null,GL=null,GBUR={lat:42.3439,lon:-3.6969};
+function gnum(v){var n=parseFloat(String(v==null?"":v).replace(",","."));return isNaN(n)?null:n}
+function gkey(o,re){for(var k in o)if(re.test(k))return o[k];return null}
+function gdist(a,b,c,d){var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
+function gParse(j){var L=(j&&j.ListaEESSPrecio)||[],o=[];L.forEach(function(e){var la=gnum(gkey(e,/^Latitud/)),lo=gnum(gkey(e,/^Longitud/));if(la==null||lo==null)return;
+ var d=gnum(gkey(e,/^Precio Gaso(leo|l.o) A$/)),g=gnum(gkey(e,/^Precio Gasolina 95 E5$/));if(g==null)g=gnum(gkey(e,/^Precio Gasolina 95 E10$/));
+ o.push({n:String(gkey(e,/^R.tulo/)||"Gasolinera").toLowerCase().replace(/(^|\s)\S/g,function(m){return m.toUpperCase()}),a:String(gkey(e,/^Direcci/)||"").toLowerCase().replace(/(^|\s)\S/g,function(m){return m.toUpperCase()}),m:String(gkey(e,/^Municipio/)||""),la:la,lo:lo,d:d,g:g})});
+ return{f:(j&&j.Fecha)||"",t:Date.now(),s:o}}
+function gLoad(){try{GC=JSON.parse(localStorage.getItem(GK))}catch(e){GC=null}
+ if(GC&&Date.now()-GC.t<3*3600*1000){gDraw();return}
+ gDraw();
+ var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},12000);
+ fetch("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroProvincia/09",{headers:{Accept:"application/json"},signal:ctl?ctl.signal:undefined}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){clearTimeout(tm);var c=gParse(j);if(!c.s.length)throw 0;GC=c;try{localStorage.setItem(GK,JSON.stringify(c))}catch(e){}gDraw()}).catch(function(){clearTimeout(tm);GL="err";gDraw()})}
+function gSet(k,v){S.cfg[k]=v;save();gDraw()}
+function gLoc(){if(!navigator.geolocation){toast("Este móvil no da la ubicación");return}toast("Buscando tu ubicación…");navigator.geolocation.getCurrentPosition(function(p){GP={lat:p.coords.latitude,lon:p.coords.longitude};gDraw()},function(){toast("No me has dado permiso de ubicación")},{enableHighAccuracy:false,timeout:10000,maximumAge:300000})}
+function gDraw(){var el=$("gas");if(!el)return;var f=S.cfg.gf||"d",r=S.cfg.gr||10,c=GP||GBUR,h='<div class="tp"><button class="'+(f=="d"?"on":"")+'" onclick="gSet(\'gf\',\'d\')">Diésel</button><button class="'+(f=="g"?"on":"")+'" onclick="gSet(\'gf\',\'g\')">Gasolina 95</button></div><div class="rd">'+[5,10,20,50].map(function(k){return'<span class="'+(k==r?"on":"")+'" onclick="gSet(\'gr\','+k+')">'+k+' km</span>'}).join("")+'</div>';
+ if(!GC){h+='<div class="gm">'+(GL=="err"?"Sin datos ahora. Prueba más tarde con internet.":"Cargando precios…")+'</div>';el.innerHTML=h;return}
+ var L=GC.s.filter(function(x){return x[f]!=null&&x[f]>0}).map(function(x){return{x:x,k:gdist(c.lat,c.lon,x.la,x.lo)}}).filter(function(y){return y.k<=r}).sort(function(a,b){return a.x[f]-b.x[f]||a.k-b.k}).slice(0,3);
+ if(!L.length)h+='<div class="gm" style="font-size:13px">No hay gasolineras con precio a menos de '+r+' km. Prueba con más radio.</div>';
+ else h+=L.map(function(y,i){var x=y.x;return'<a class="gr'+(i==0?' f':'')+'" style="color:inherit;text-decoration:none" href="https://maps.apple.com/?daddr='+x.la+','+x.lo+'&dirflg=d"><div><b>'+esc(x.n)+'</b><small>'+esc(x.a?x.a+" · ":"")+nf(y.k,1)+' km</small></div><div class="pr">'+nf(x[f],3)+' €</div></a>'}).join("");
+ var dt=GC.f?String(GC.f).slice(0,10):"";h+='<div class="gm">'+(GP?"Desde tu ubicación":"Desde el centro de Burgos")+' · <button class="gl" onclick="gLoc()">📍 Usar mi ubicación</button><br>Precios del Ministerio'+(dt?" · datos del "+esc(dt):"")+(GL=="err"?" · sin conexión, últimos guardados":"")+'. Toca una para ir con Apple Maps.</div>';
+ el.innerHTML=h}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast("No se pudo guardar: sin espacio")}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function today(){var d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
@@ -527,7 +556,7 @@ function sharePDF(){if(!pdfFile)return;if(navigator.canShare&&navigator.canShare
 function openPDF(){if(pdfFile)window.open(URL.createObjectURL(pdfFile),"_blank")}
 
 /* ---------- arranque ---------- */
-load();setColor(S.cfg.color||0);greet();render();go(0);spT=setTimeout(hideSplash,4200);
+load();setColor(S.cfg.color||0);greet();render();go(0);gLoad();spT=setTimeout(hideSplash,4200);
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>
