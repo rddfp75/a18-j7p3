@@ -76,6 +76,7 @@ nav .badge{position:absolute;top:-4px;right:calc(50% - 20px);background:var(--ac
 .sheet.on{display:flex}
 .sheet .in{width:100%;max-height:92%;overflow-y:auto;background:#17171b;border-radius:28px 28px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom) + 24px);animation:up .3s ease}
 @keyframes up{from{transform:translateY(60px);opacity:0}}
+.sheet .xs{position:sticky;top:0;float:right;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid #ffffff30;background:#2a2a30;color:#fff;font-size:18px;line-height:1;margin:-4px -4px 0 8px}
 .sheet h2{font-size:30px;margin-bottom:6px}
 label{display:block;font-size:12px;color:var(--mu);margin-top:12px}
 input[type=text],input[type=number],input[type=date],input:not([type]){width:100%;margin-top:5px;padding:13px;border-radius:13px;border:1px solid #ffffff22;background:#ffffff0c;color:var(--tx);font-size:16px;font-family:inherit;min-width:0;max-width:100%}
@@ -129,7 +130,11 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
 #yr .bars i.d{background:var(--ac)}
 #yr .x{position:absolute;top:calc(env(safe-area-inset-top) + 26px);right:16px;z-index:4;background:#0008;border:0;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px}
 #vw{position:absolute;inset:0;z-index:70;background:#000;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
-#vw.on{display:block}
+#vw.on{display:block;touch-action:pinch-zoom pan-x pan-y}
+#vw .sh2{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:2;display:none}
+#vw.can .sh2{display:flex}
+.vr{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #ffffff12;font-size:15px}.vr span{color:var(--mu);flex:none}.vr b{text-align:right;font-weight:600}
+.vph{height:210px;border-radius:16px;background:#ffffff0d center/cover no-repeat;margin-top:14px;border:1px solid #ffffff22;display:grid;place-items:end center;color:#fff;font-size:12px;font-weight:700}.vph i{font-style:normal;background:#000a;padding:5px 12px;border-radius:12px 12px 0 0}
 #vw img{width:100%;display:block}
 #vw .x{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:14px;z-index:2;background:#000a;border:0;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px}
 .bd{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -145,7 +150,7 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
 
 <div id="splash" onclick="hideSplash()"><div class="sp i-hero"></div><div class="spt"><small>Mercedes A 180 d</small><h1 class="cond" id="sg"></h1><p id="sp2"></p><div class="ln"></div></div><div class="tp">Toca para entrar</div></div>
 <div id="yr" onclick="yrTap(event)"><div class="bars" id="yb"></div><button class="x" onclick="event.stopPropagation();closeY()">✕</button><div id="ys"></div></div>
-<div id="vw" onclick="closeV()"><button class="x">✕</button><img id="vi" alt=""></div>
+<div id="vw" onclick="closeV()"><button class="x">✕</button><img id="vi" alt=""><button class="btn sh2" onclick="event.stopPropagation();shareBlob()">⤴︎ Compartir o guardar foto</button></div>
 
 <section class="screen on" id="t0">
   <div class="head i-hero"><button class="gear" onclick="openSet()" aria-label="Ajustes">⚙︎</button><small>Mercedes A 180 d</small><h1 class="cond" onclick="showSplash()">Hola, <em>Júlia</em></h1></div>
@@ -238,6 +243,15 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
   <button class="btn" style="margin-top:16px" onclick="saveQuick()">Guardar en pendientes</button>
 </div></div>
 
+<div class="sheet" id="sVer" onclick="if(event.target==this)closeSh('sVer')"><div class="in">
+  <h2 class="cond" id="vT">Gasto</h2>
+  <div id="vBody"></div>
+  <div class="vph" id="vPh" style="display:none" onclick="verFoto()"><i>Toca para ampliar</i></div>
+  <button class="btn g" id="vSh" style="display:none;margin-top:10px;padding:12px" onclick="verShare()">⤴︎ Compartir o guardar foto</button>
+  <button class="btn" style="margin-top:16px" onclick="verEdit()">Editar</button>
+  <button class="btn g" style="margin-top:10px" onclick="closeSh('sVer')">Cerrar</button>
+</div></div>
+
 <div class="sheet" id="sExp" onclick="if(event.target==this)closeSh('sExp')"><div class="in">
   <h2 class="cond" id="eT">Nuevo gasto</h2>
   <label>Tipo</label><div class="tychips" id="ety"></div>
@@ -249,6 +263,7 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-height:48px;display
   <label class="slot" id="eph"><span>📎 Foto de la factura o del parte</span><input type="file" accept="image/*" onchange="pickExp(this)"></label>
   <button class="btn g" id="ephdel" style="display:none;margin-top:8px;padding:10px" onclick="rmExpPh()">Quitar la foto</button>
   <button class="btn" style="margin-top:16px" onclick="saveExp()">Guardar gasto</button>
+  <button class="btn g" style="margin-top:10px" onclick="closeSh('sExp')">Cancelar</button>
   <button class="btn del" id="edel" style="display:none" onclick="delExp()">Eliminar gasto</button>
 </div></div>
 
@@ -309,8 +324,10 @@ function pDel(k){return idb("readwrite",function(s){return s.delete(k)})}
 function shrink(file){return new Promise(function(res,rej){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,1100/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},"image/jpeg",.7)};im.onerror=function(){rej()};im.src=u})}
 function slotShow(el,blob,txt){if(el._u)URL.revokeObjectURL(el._u);el._u=URL.createObjectURL(blob);el.style.backgroundImage="url("+el._u+")";el.classList.add("ok");el.firstElementChild.textContent=txt}
 function slotReset(el,txt){el.style.backgroundImage="";el.classList.remove("ok");el.firstElementChild.textContent=txt}
-function viewBlob(b){var u=URL.createObjectURL(b);$("vi").src=u;$("vw").classList.add("on")}
-function closeV(){$("vw").classList.remove("on");$("vi").removeAttribute("src")}
+var vb=null;
+function viewBlob(b){vb=b;var u=URL.createObjectURL(b);$("vi").src=u;$("vw").classList.add("on");$("vw").classList.toggle("can",!!(navigator.canShare&&window.File))}
+function shareBlob(){if(!vb)return;var f=new File([vb],"factura-A180d.jpg",{type:"image/jpeg"});if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:"Factura"}).catch(function(){});else toast("Mantén pulsada la foto para guardarla")}
+function closeV(){$("vw").classList.remove("on");$("vi").removeAttribute("src");vb=null}
 
 /* ---------- cálculos ---------- */
 function intervals(){var f=S.fills.filter(function(x){return x.k&&x.full}).sort(function(a,b){return a.k-b.k}),out=[];
@@ -358,7 +375,7 @@ function render(){var st=stats(),fl=S.fills.slice().sort(function(a,b){return a.
  var ex=S.exp.slice().sort(function(a,b){return a.date<b.date?1:-1}),yr=String(new Date().getFullYear()),tot=0,nv=0;
  S.exp.forEach(function(e){if((e.date||"").slice(0,4)==yr){tot+=e.i;nv++}});
  $("gt").innerHTML=nf(tot,0)+"<i>€</i>";$("gv").textContent=nv;
- $("gl").innerHTML=ex.length?ex.map(function(g){var i=S.exp.indexOf(g);return'<div class="row" onclick="openExp('+i+')"><div class="l"><b>'+g.ic+' '+g.type+'</b><small>'+dfmt(g.date)+(g.k?' · '+nf(g.k,0)+' km':'')+(g.shop?' · '+esc(g.shop):'')+(g.photo?' · 📎':'')+'</small><small>'+esc(g.txt||"")+'</small></div><div class="r">'+nf(g.i,0)+' €<small>editar</small></div></div>'}).join(""):'<div class="empty">Aún no hay gastos del taller</div>';
+ $("gl").innerHTML=ex.length?ex.map(function(g){var i=S.exp.indexOf(g);return'<div class="row" onclick="openVer('+i+')"><div class="l"><b>'+g.ic+' '+g.type+'</b><small>'+dfmt(g.date)+(g.k?' · '+nf(g.k,0)+' km':'')+(g.shop?' · '+esc(g.shop):'')+(g.photo?' · 📎':'')+'</small><small>'+esc(g.txt||"")+'</small></div><div class="r">'+nf(g.i,0)+' €<small>ver</small></div></div>'}).join(""):'<div class="empty">Aún no hay gastos del taller</div>';
  var av=avisos(),h="";
  av.forEach(function(a){h+='<div class="row" onclick="'+(a.i>=0?'openAv('+a.i+')':'openSet()')+'"><div class="l"><b>'+esc(a.t)+'</b><small>'+(a.date?dfmt(a.date):esc(a.w))+(a.date&&a.w?' · '+esc(a.w):'')+'</small></div><div class="r">'+(a.date?falta(new Date(a.date+"T12:00:00")):'')+'</div></div>'});
  $("avs").innerHTML=h;var a0=av[0];
@@ -410,6 +427,15 @@ function saveQuick(){if(!tmp.a&&!tmp.b){toast("Haz al menos una foto");return}va
  if(tmp.a)jobs.push(pPut("p"+id+"a",tmp.a));if(tmp.b)jobs.push(pPut("p"+id+"b",tmp.b));
  Promise.all(jobs).then(function(){S.pend.push({id:id,ts:Date.now(),a:!!tmp.a,b:!!tmp.b});save();closeSh("sQuick");render();toast("Guardado en pendientes");go(2)}).catch(function(){toast("No se pudieron guardar las fotos")})}
 function chips(){$("ety").innerHTML=TY.map(function(t,i){return'<span class="'+(i==em.ty?"on":"")+'" onclick="em.ty='+i+';chips()">'+t[0]+' '+t[1]+'</span>'}).join("")}
+var vi=-1,vblob=null;
+function openVer(i){var g=S.exp[i];if(!g)return;vi=i;vblob=null;$("vT").textContent=g.ic+" "+g.type;
+ $("vBody").innerHTML='<div class="vr"><span>Fecha</span><b>'+dfmt(g.date)+'</b></div><div class="vr"><span>Qué se hizo</span><b>'+esc(g.txt||"—")+'</b></div><div class="vr"><span>Taller</span><b>'+esc(g.shop||"—")+'</b></div><div class="vr"><span>Importe</span><b>'+nf(g.i,2)+' €</b></div><div class="vr"><span>Kilómetros</span><b>'+(g.k?nf(g.k,0)+' km':"—")+'</b></div>';
+ var ph=$("vPh");ph.style.display="none";ph.style.backgroundImage="";$("vSh").style.display="none";
+ if(g.photo)pGet("e"+g.id).then(function(b){if(b&&vi==i){vblob=b;if(ph._u)URL.revokeObjectURL(ph._u);ph._u=URL.createObjectURL(b);ph.style.backgroundImage="url("+ph._u+")";ph.style.display="grid";if(navigator.canShare&&window.File)$("vSh").style.display="flex"}});
+ openSh("sVer")}
+function verFoto(){if(vblob)viewBlob(vblob)}
+function verShare(){if(!vblob)return;vb=vblob;shareBlob()}
+function verEdit(){var i=vi;closeSh("sVer");openExp(i)}
 function openExp(i){em.idx=i;em.blob=null;em.del=false;em.had=false;var g=i>=0?S.exp[i]:null;em.ty=g?Math.max(0,TY.map(function(t){return t[1]}).indexOf(g.type)):0;chips();
  $("eT").textContent=g?"Editar gasto":"Nuevo gasto";$("ed").value=g?g.date:today();$("ex").value=g?g.txt||"":"";$("es").value=g?g.shop||"":"";$("ei").value=g?String(g.i).replace(".",","):"";$("ek").value=g&&g.k?g.k:"";
  slotReset($("eph"),"📎 Foto de la factura o del parte");$("ephdel").style.display="none";$("edel").style.display=g?"block":"none";
@@ -505,4 +531,5 @@ load();setColor(S.cfg.color||0);greet();render();go(0);spT=setTimeout(hideSplash
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>
+<script>document.querySelectorAll(".sheet").forEach(function(sh){var b=document.createElement("button");b.className="xs";b.textContent="✕";b.setAttribute("aria-label","Cerrar sin guardar");b.onclick=function(){closeSh(sh.id)};var i=sh.querySelector(".in");i.insertBefore(b,i.firstChild)});</script>
 </body></html>
